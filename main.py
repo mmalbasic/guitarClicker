@@ -1,42 +1,11 @@
 import pygame 
 import pygame_gui
 import sys
+import os
 import random
-
-pygame.init()
-white = (255, 255, 255)
-black = (0, 0, 0)
-green = (0, 255, 0)
-blue = (0, 0, 128)
-screen = pygame.display.set_mode((800, 600))
-screen_x, screen_y = screen.get_size()
-inner_screen_width = screen_x*0.75
-inner_screen_height = screen_y*0.75
-screen.fill(white)
-
-pygame.display.flip()
-
-DEFAULT_IMAGE_SIZE = x, y = 100, 100
-
-image_1 = pygame.image.load('images/')
-image_2 = pygame.image.load('images/')
-image_3 = pygame.image.load('images/')
-sound_1 = pygame.mixer.Sound('sounds/')
-sound_2 = pygame.mixer.Sound('sounds/')
-
-screen.blit(image_1, (50, 40))
-pygame.display.flip()
-
-running = True
-while running:
-    pygame.time.delay(10)
-    for event in pygame.event.get():
-        if event.type == pygame.QUIT:
-            running = False
-            pygame.quit()
-            sys.exit()
-import pygame
 import math
+import time
+import threading
 
 pygame.init()
 
@@ -44,34 +13,76 @@ pygame.init()
 screen = pygame.display.set_mode((0, 0), pygame.FULLSCREEN)
 screen_width, screen_height = screen.get_size()
 
+white = (255, 255, 255)
+black = (0, 0, 0)
+green = (0, 255, 0)
+blue = (0, 0, 128)
+inner_screen_width = screen_width*0.75
+inner_screen_height = screen_height*0.75
+screen.fill(white)
+
+DEFAULT_IMAGE_SIZE = x, y = 100, 100
+
+images = []
+
+for root, dirs, files in os.walk('images/'):
+    print(files)
+
+#image_2 = pygame.image.load('images/')
+#image_3 = pygame.image.load('images/')
+#sound_1 = pygame.mixer.Sound('sounds/')
+#sound_2 = pygame.mixer.Sound('sounds/')
+
+#screen.blit(image_2, (50, 40))
+
 def reset_game():
     global circle_Y_positions, increment, points
-    circle_Y_positions = [base_posY + (100 * i) for i in range(len(circle_positions))]
-    increment = 0.1
+    circle_Y_positions = [base_posY + (500 * i) for i in range(len(circle_positions))]
+    increment = 0.3
     points = 0
+
 
 # Initial settings
 running = True
-base_posY = -500  # Initial Y position for all circles
-increment = 0.1  # Speed increase over time
+base_posY = -2600  # Initial Y position for all circles
+increment = 0.3  # Speed increase over time
 points = 0  # Player points
 
 # Define circles with separate Y-positions
 circle_positions = [220 * (i + 1) for i in range(6)]
-circle_Y_positions = [base_posY + (100 * i) for i in range(len(circle_positions))]
+circle_Y_positions = [base_posY + (500 * i) for i in range(len(circle_positions))]
 
 def process_click(index):
+    reset_circle_pos()
+    print(f'Circle at {circle_positions[index]} has been clicked')
+    increment += 0.001 
+    points += 1
+
+def reset_circle_pos(index):
     global increment, points
     circle_Y_positions[index] = -200  # Reset only the clicked circle's Y position
-    print(f'Circle at {circle_positions[index]} has been clicked')
-    increment += 0.0001 
-    points += 1
+    if points <= 0:
+        time.sleep(1)
+        reset_game()
 
 def penalty():
     global points
     points -= 1
     if points <= 0:
+        time.sleep(1)
         reset_game()
+
+    
+def countdown(t): 
+    while True:
+        while t > 0: 
+            time.sleep(1) 
+            t -= 1        
+        reset_game()
+
+
+timerThread = threading.Thread(target=lambda: countdown(60))
+timerThread.start()
 
 while running:
     # Get mouse position
@@ -86,6 +97,9 @@ while running:
     # Move all circles down
     for i in range(len(circle_Y_positions)):
         circle_Y_positions[i] += increment
+        if circle_Y_positions[i] > screen_height:  # Check if circle reaches the bottom
+            reset_circle_pos(i)  # Reset the circle when it reaches the bottom
+
 
     # Draw circles
     for i, (posX, posY) in enumerate(zip(circle_positions, circle_Y_positions)):
